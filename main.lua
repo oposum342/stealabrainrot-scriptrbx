@@ -1,15 +1,35 @@
+-- Booting UI Library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
+-- Intilizate Other
 local RunService = game:GetService("RunService")
 local noclipBoosterEnabled = false
 local boosterForce = 1000
-local function enableBooster()
-    noclipBoosterEnabled = true
-end
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local savedPosition = nil
+local TweenService = game:GetService("TweenService")
+local player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local blinkEnabled = false
+local buffer = {}
+local bufferSize = 10
+-- ESP
+local ESPSettings = {
+    Box = false,
+    Name = false,
+}
+local ESPGui = nil
+local ESPLabels = {}
+local ESPBoxes = {}
+local ESPActive = false
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = game.Players.LocalPlayer
+-- End ESP
 
+-- Disable NoClip Booster Function
 local function disableBooster()
     noclipBoosterEnabled = false
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -17,14 +37,7 @@ local function disableBooster()
         if bv then bv:Destroy() end
     end
 end
-
--- 🧠 Переменная для сохранённой позиции
-local savedPosition = nil
-
--- 🚀 Метод плавного телепорта
-local TweenService = game:GetService("TweenService")
-local player = game.Players.LocalPlayer
-
+-- Smooth Teleport for AutoSteal(Default)
 local function smoothTeleport(targetVec3)
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:WaitForChild("HumanoidRootPart")
@@ -41,7 +54,7 @@ local function smoothTeleport(targetVec3)
         hrp.CanCollide = true
     end)
 end
-
+-- RunService Logic
 RunService.Stepped:Connect(function()
     if noclipBoosterEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = LocalPlayer.Character.HumanoidRootPart
@@ -56,52 +69,22 @@ RunService.Stepped:Connect(function()
         end
 
         local moveDir = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").MoveDirection
-        bv.Velocity = moveDir * 20 -- скорость движения сквозь препятствия
+        bv.Velocity = moveDir * 20
     end
 end)
-
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local blinkEnabled = false
-local buffer = {}
-local bufferSize = 10 -- сколько кадров задержки
-
+-- RunService on RenderStepped for NoClip(Default) Logic
 RunService.RenderStepped:Connect(function()
     if blinkEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = LocalPlayer.Character.HumanoidRootPart
         table.insert(buffer, hrp.CFrame)
 
         if #buffer > bufferSize then
-            hrp.CFrame = buffer[1] -- применяем старую позицию
+            hrp.CFrame = buffer[1] 
             table.remove(buffer, 1)
         end
     end
 end)
-
--- Включение/выключение
-function toggleBlink()
-    blinkEnabled = not blinkEnabled
-    buffer = {}
-end
-
-
-
-local ESPSettings = {
-    Box = false,
-    Name = false,
-}
-
-local ESPGui = nil
-local ESPLabels = {}
-local ESPBoxes = {}
-local ESPActive = false
-
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = game.Players.LocalPlayer
-
--- Очистка ESP
+-- Clear ESP
 local function clearESP()
     if ESPGui then ESPGui:Destroy() end
     ESPLabels = {}
@@ -110,16 +93,13 @@ local function clearESP()
     end
     ESPBoxes = {}
 end
-
--- Создание GUI
+-- Create ESP Gui
 local function createESPGui()
     ESPGui = Instance.new("ScreenGui")
     ESPGui.Name = "SafeESP"
     ESPGui.ResetOnSpawn = false
     ESPGui.Parent = game:GetService("CoreGui")
 end
-
--- Создание метки и бокса
 local function createESPLabel(player)
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0, 100, 0, 20)
@@ -139,8 +119,7 @@ local function createESPLabel(player)
     box.Transparency = 1
     ESPBoxes[player] = box
 end
-
--- Обновление ESP
+-- Refresh ESP
 local function refreshESP()
     clearESP()
 
@@ -272,6 +251,18 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+local function smoothSteal(pos)
+    local player = game.Players.LocalPlayer
+    if not player then return warn("No LocalPlayer") end
+
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return warn("No HumanoidRootPart") end
+
+    if typeof(pos) ~= "Vector3" then return warn("Invalid savedPosition") end
+
+    hrp.CFrame = CFrame.new(pos)
+end
 
 -- Интерфейс Rayfield
 local Window = Rayfield:CreateWindow({
@@ -351,17 +342,28 @@ StealTab:CreateButton({
 
 -- 🖱️ Кнопка: Телепорт
 StealTab:CreateButton({
-    Name = "🚀 Auto Steal",
+    Name = "🚀 Smooth Steal",
     Callback = function()
         if savedPosition then
             smoothTeleport(savedPosition)
         else
             Rayfield:Notify({
                 Title = "Error",
-                Content = "Please, save a teleport postion before using auto steal!",
+                Content = "Please, save a teleport pos before using auto steal!",
                 Duration = 3,
 				Image = "rewind",
             })
+        end
+    end
+})
+
+StealTab:CreateButton({
+    Name = "💾 Instant Steal",
+    Callback = function()
+	     if savedPosition then
+            smoothSteal(savedPosition)
+        else
+            warn("savedPosition is nil")
         end
     end
 })
@@ -375,25 +377,6 @@ RageTab:CreateToggle({
        toggleNoclip(Value)
    end,
 })
-
-RageTab:CreateToggle({
-    Name = "God Mode",
-    CurrentValue = false,
-    Flag = "godmode",
-    Callback = function(Value)
-       -- toggleGodMode(Value)
-   end,
-})
-
-RageTab:CreateToggle({
-    Name = "Allow Player Fly",
-    CurrentValue = false,
-    Flag = "fly",
-    Callback = function(Value)
-       -- toogleFly(Value)
-   end,
-})
-
 local SpeedSlider = RageTab:CreateSlider({
    Name = "Speed Selector",
    Range = {0, 100},
