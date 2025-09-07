@@ -1,27 +1,14 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local RunService = game:GetService("RunService")
-local LocalPlayer = game.Players.LocalPlayer
 local noclipBoosterEnabled = false
-local boosterForce = 1000 -- сила проталкивания
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-function setSpeed(Value)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = Value
-    end
-end
-
-function setJump(Value)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").JumpPower = Value
-    end
-end
+local boosterForce = 1000
 local function enableBooster()
     noclipBoosterEnabled = true
 end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
 local function disableBooster()
     noclipBoosterEnabled = false
@@ -29,6 +16,30 @@ local function disableBooster()
         local bv = LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BoosterVelocity")
         if bv then bv:Destroy() end
     end
+end
+
+-- 🧠 Переменная для сохранённой позиции
+local savedPosition = nil
+
+-- 🚀 Метод плавного телепорта
+local TweenService = game:GetService("TweenService")
+local player = game.Players.LocalPlayer
+
+local function smoothTeleport(targetVec3)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    local targetCFrame = CFrame.new(targetVec3)
+    hrp.CanCollide = false
+
+    local tweenInfo = TweenInfo.new(1.2, Enum.EasingStyle.Linear)
+    local goal = {CFrame = targetCFrame}
+    local tween = TweenService:Create(hrp, tweenInfo, goal)
+
+    tween:Play()
+    tween.Completed:Connect(function()
+        hrp.CanCollide = true
+    end)
 end
 
 RunService.Stepped:Connect(function()
@@ -146,6 +157,19 @@ local function refreshESP()
             createESPLabel(player)
         end
     end
+
+	if not ESPSettings.Box and not ESPSettings.Name then
+    ESPActive = false
+
+    -- Скрываем все ESP-объекты
+    for _, label in pairs(ESPLabels) do
+        label.Visible = false
+    end
+    for _, box in pairs(ESPBoxes) do
+        box.Visible = false
+    end
+    return
+end
 end
 
 -- Обновление каждый кадр
@@ -215,16 +239,34 @@ local LocalPlayer = Players.LocalPlayer
 local noclipEnabled = false
 
 -- Функция включения/выключения noclip
-local function toggleNoclip()
-    noclipEnabled = not noclipEnabled
+local noclipEnabled = false
+
+function toggleNoclip(state)
+    noclipEnabled = state
 end
+
+RunService.Stepped:Connect(function()
+    local char = game.Players.LocalPlayer.Character
+    if not char then return end
+
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not noclipEnabled
+        end
+    end
+end)
 
 -- Цикл отключения столкновений
 RunService.Stepped:Connect(function()
-    if noclipEnabled and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide == true then
+    local char = game.Players.LocalPlayer.Character
+    if not char then return end
+
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if noclipEnabled then
                 part.CanCollide = false
+            else
+                part.CanCollide = true
             end
         end
     end
@@ -289,6 +331,40 @@ MainTab:CreateToggle({
         refreshESP()
     end,
 })
+-- Вкладка Steal
+local StealTab = Window:CreateTab("Steal", nil)
+-- 🖱️ Кнопка: Установить позицию
+StealTab:CreateButton({
+    Name = "📍 Set Auto Steal postion",
+    Callback = function()
+        local character = player.Character or player.CharacterAdded:Wait()
+        local hrp = character:WaitForChild("HumanoidRootPart")
+        savedPosition = hrp.Position
+        Rayfield:Notify({
+            Title = "Success",
+            Content = "Auto Steal teleport postion saved!",
+            Duration = 3,
+			Image = "rewind",
+        })
+    end
+})
+
+-- 🖱️ Кнопка: Телепорт
+StealTab:CreateButton({
+    Name = "🚀 Auto Steal",
+    Callback = function()
+        if savedPosition then
+            smoothTeleport(savedPosition)
+        else
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Please, save a teleport postion before using auto steal!",
+                Duration = 3,
+				Image = "rewind",
+            })
+        end
+    end
+})
 -- Вкладка Rage
 local RageTab = Window:CreateTab("Rage", nil)
 RageTab:CreateToggle({
@@ -296,11 +372,54 @@ RageTab:CreateToggle({
     CurrentValue = false,
     Flag = "noclip",
     Callback = function(Value)
-        toggleNoclip()
-    end,
+       toggleNoclip(Value)
+   end,
 })
+
+RageTab:CreateToggle({
+    Name = "God Mode",
+    CurrentValue = false,
+    Flag = "godmode",
+    Callback = function(Value)
+       -- toggleGodMode(Value)
+   end,
+})
+
+RageTab:CreateToggle({
+    Name = "Allow Player Fly",
+    CurrentValue = false,
+    Flag = "fly",
+    Callback = function(Value)
+       -- toogleFly(Value)
+   end,
+})
+
+local SpeedSlider = RageTab:CreateSlider({
+   Name = "Speed Selector",
+   Range = {0, 100},
+   Increment = 10,
+   Suffix = "",
+   CurrentValue = 36,
+   Flag = "speedbooster",
+   Callback = function(Value)
+   -- set a speed working
+   end,
+})
+
+local JumpSlider = RageTab:CreateSlider({
+   Name = "Jump Force Selector",
+   Range = {0, 100},
+   Increment = 10,
+   Suffix = "",
+   CurrentValue = 36,
+   Flag = "jumpbooster",
+   Callback = function(Value)
+   -- set a speed working
+   end,
+})
+
 -- Other Tab
-local OtherTab = Window:CreateTab("Other Tab", nil)
+local OtherTab = Window:CreateTab("Other", nil)
 OtherTab:CreateButton({
     Name = "Unload Interface & Script",
     Callback = function()
