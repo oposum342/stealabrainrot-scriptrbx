@@ -1,8 +1,11 @@
 -- Booting UI Library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 -- Intilizate Other
+local setclipboard = setclipboard or writeclipboard
+local TeleportService = game:GetService("TeleportService")
+local PLACE_ID = game.PlaceId
+local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
-local noclipBoosterEnabled = false
 local boosterForce = 1000
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -27,16 +30,17 @@ local ESPActive = false
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = game.Players.LocalPlayer
--- End ESP
 
--- Disable NoClip Booster Function
-local function disableBooster()
-    noclipBoosterEnabled = false
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local bv = LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BoosterVelocity")
-        if bv then bv:Destroy() end
-    end
+local noclipEnabled = false
+
+-- Функция включения/выключения noclip
+local noclipEnabled = false
+
+function toggleNoclip(state)
+    noclipEnabled = state
 end
+
+-- End ESP
 -- Smooth Teleport for AutoSteal(Default)
 local function smoothTeleport(targetVec3)
     local character = player.Character or player.CharacterAdded:Wait()
@@ -54,36 +58,6 @@ local function smoothTeleport(targetVec3)
         hrp.CanCollide = true
     end)
 end
--- RunService Logic
-RunService.Stepped:Connect(function()
-    if noclipBoosterEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        local bv = hrp:FindFirstChild("BoosterVelocity")
-
-        if not bv then
-            bv = Instance.new("BodyVelocity")
-            bv.Name = "BoosterVelocity"
-            bv.MaxForce = Vector3.new(boosterForce, boosterForce, boosterForce)
-            bv.Velocity = Vector3.new(0, 0, 0)
-            bv.Parent = hrp
-        end
-
-        local moveDir = LocalPlayer.Character:FindFirstChildOfClass("Humanoid").MoveDirection
-        bv.Velocity = moveDir * 20
-    end
-end)
--- RunService on RenderStepped for NoClip(Default) Logic
-RunService.RenderStepped:Connect(function()
-    if blinkEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        table.insert(buffer, hrp.CFrame)
-
-        if #buffer > bufferSize then
-            hrp.CFrame = buffer[1] 
-            table.remove(buffer, 1)
-        end
-    end
-end)
 -- Clear ESP
 local function clearESP()
     if ESPGui then ESPGui:Destroy() end
@@ -210,31 +184,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
-local LocalPlayer = Players.LocalPlayer
-local noclipEnabled = false
-
--- Функция включения/выключения noclip
-local noclipEnabled = false
-
-function toggleNoclip(state)
-    noclipEnabled = state
-end
-
-RunService.Stepped:Connect(function()
-    local char = game.Players.LocalPlayer.Character
-    if not char then return end
-
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = not noclipEnabled
-        end
-    end
-end)
-
 -- Цикл отключения столкновений
 RunService.Stepped:Connect(function()
     local char = game.Players.LocalPlayer.Character
@@ -251,6 +200,12 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+
 local function smoothSteal(pos)
     local player = game.Players.LocalPlayer
     if not player then return warn("No LocalPlayer") end
@@ -266,45 +221,40 @@ end
 
 -- Интерфейс Rayfield
 local Window = Rayfield:CreateWindow({
-    Name = "Legit Hub | ⚡ Steal a Brainrot",
-    Icon = 0,
-    LoadingTitle = "Loading interface...",
-    LoadingSubtitle = "by fronex",
-    ShowText = "HackWare",
-    Theme = "Default",
-    ToggleUIKeybind = "K",
-    DisableRayfieldPrompts = false,
-    DisableBuildWarnings = false,
-
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = nil,
-        FileName = "Legit Hub"
-    },
-
-    Discord = {
-        Enabled = false,
-        Invite = "noinvitelink",
-        RememberJoins = true
-    },
-
-    KeySystem = true,
-    KeySettings = {
-        Title = "Key System | ✅ Steal a Brainrot",
-        Subtitle = "Auth to use this script.",
-        Note = "Use a free key while script working in progress, Key: Free",
-        FileName = "key",
-        SaveKey = true,
-        GrabKeyFromSite = false,
-        Key = {"Free"}
-    }
+   Name = "Excellent | Steal a Brainrot",
+   Icon = 0, 
+   LoadingTitle = "Loading Excellent Menu...",
+   LoadingSubtitle = "by bloodreaper",
+   ShowText = "Excellent - AuthSuite", -- for mobile button
+   Theme = "Default",
+   ToggleUIKeybind = "K",
+   DisableRayfieldPrompts = true,
+   DisableBuildWarnings = true,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil,
+      FileName = "Excellent Hub"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
+   },
+   KeySystem = true,
+   KeySettings = {
+      Title = "Auth Suite",
+      Subtitle = "Complete Key System before continue",
+      Note = "Buy key on offical FunPay or give in discord if you youtube",
+      FileName = "keysystem",
+      SaveKey = true,
+      GrabKeyFromSite = true,
+      Key = {"dev"}
+   }
 })
-
 -- Вкладка Main
 local MainTab = Window:CreateTab("Main", 4483362458)
-
 MainTab:CreateToggle({
-    Name = "ESP Box",
+    Name = "Trace Player Box",
     CurrentValue = false,
     Flag = "esp_box",
     Callback = function(Value)
@@ -314,7 +264,7 @@ MainTab:CreateToggle({
 })
 
 MainTab:CreateToggle({
-    Name = "ESP Name",
+    Name = "Trace Player Name",
     CurrentValue = false,
     Flag = "esp_name",
     Callback = function(Value)
@@ -322,6 +272,45 @@ MainTab:CreateToggle({
         refreshESP()
     end,
 })
+
+local SmoothStealKeyBind = MainTab:CreateKeybind({
+   Name = "Smooth Steal Keybind",
+   CurrentKeybind = "Q",
+   HoldToInteract = false,
+   Flag = "smoothstealkeybind",
+   Callback = function(Keybind)
+        if savedPosition then
+            smoothTeleport(savedPosition)
+        else
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Please, save a teleport pos before using auto steal!",
+                Duration = 3,
+				Image = "rewind",
+            })
+        end
+   end,
+})
+
+local InstantStealKeybind = MainTab:CreateKeybind({
+   Name = "Instant Steal Keybind",
+   CurrentKeybind = "F",
+   HoldToInteract = false,
+   Flag = "instantstealkeybind",
+   Callback = function(Keybind)
+        if savedPosition then
+            smoothSteal(savedPosition)
+        else
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Please, save a teleport pos before using auto steal!",
+                Duration = 3,
+				Image = "rewind",
+            })
+        end
+   end,
+})
+
 -- Вкладка Steal
 local StealTab = Window:CreateTab("Steal", nil)
 -- 🖱️ Кнопка: Установить позицию
@@ -363,44 +352,111 @@ StealTab:CreateButton({
 	     if savedPosition then
             smoothSteal(savedPosition)
         else
-            warn("savedPosition is nil")
+        Rayfield:Notify({
+            Title = "Error",
+            Content = "Cannot find a saved steal postion!",
+            Duration = 3,
+			Image = "rewind",
+        })
         end
     end
 })
--- Вкладка Rage
+
 local RageTab = Window:CreateTab("Rage", nil)
 RageTab:CreateToggle({
-    Name = "Noclip",
+    Name = "⚡ Noclip",
     CurrentValue = false,
     Flag = "noclip",
     Callback = function(Value)
        toggleNoclip(Value)
    end,
 })
-local SpeedSlider = RageTab:CreateSlider({
-   Name = "Speed Selector",
-   Range = {0, 100},
-   Increment = 10,
-   Suffix = "",
-   CurrentValue = 36,
-   Flag = "speedbooster",
-   Callback = function(Value)
-   -- set a speed working
+
+local MiscTab = Window:CreateTab("Misc", "rewind")
+local JobIdTextBox = MiscTab:CreateInput({
+   Name = "JobID TextBox",
+   CurrentValue = "",
+   PlaceholderText = "Enter a JobID to join",
+   RemoveTextAfterFocusLost = false,
+   Flag = "jobidtextbox",
+   Callback = function(Text)
+          -- none
    end,
 })
 
-local JumpSlider = RageTab:CreateSlider({
-   Name = "Jump Force Selector",
-   Range = {0, 100},
-   Increment = 10,
-   Suffix = "",
-   CurrentValue = 36,
-   Flag = "jumpbooster",
-   Callback = function(Value)
-   -- set a speed working
+local JoinByJobIdButton = MiscTab:CreateButton({
+   Name = "👣 Join by JobId",
+   Callback = function()
+        local jobId = Rayfield.Flags["jobidtextbox"].Value
+        if jobId and jobId ~= "" then
+        TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, LocalPlayer)
+        else
+        Rayfield:Notify({
+            Title = "Error",
+            Content = "Invalid/Incorrect JobID!",
+            Duration = 3,
+			Image = "rewind",
+        })
+	  end
    end,
 })
 
+local CopyCurrentJobIDButton = MiscTab:CreateButton({
+   Name = "🗣️ Copy JobID of Current server",
+   Callback = function()
+    if setclipboard then
+        setclipboard(game.JobId)
+        Rayfield:Notify({
+            Title = "Copied!",
+            Content = "Current JobId copied to clipboard.",
+            Duration = 3
+        })
+    else
+        Rayfield:Notify({
+            Title = "Fatal Error",
+            Content = "Clipboard API Not available!",
+            Duration = 3,
+			Image = "rewind",
+        })
+    end
+   end,
+})
+
+local ServerHopButton = MiscTab:CreateButton({
+   Name = "🔄 Server Hop",
+   Callback = function()
+            local servers = {}
+    local cursor = ""
+
+    local function fetchServers()
+        local url = "https://games.roblox.com/v1/games/" .. PLACE_ID .. "/servers/Public?limit=100&sortOrder=Asc&cursor=" .. cursor
+        local response = HttpService:JSONDecode(game:HttpGet(url))
+        cursor = response.nextPageCursor or ""
+
+        for _, server in ipairs(response.data) do
+            if server.playing < server.maxPlayers then
+                table.insert(servers, server.id)
+            end
+        end
+    end
+
+    fetchServers()
+    if #servers > 0 then
+        local randomServer = servers[math.random(1, #servers)]
+		if jobId == game.JobId then
+    Rayfield:Notify({
+        Title = "Already Here",
+        Content = "You're already in this server.",
+        Duration = 3
+    })
+    return
+    end
+        TeleportService:TeleportToPlaceInstance(PLACE_ID, randomServer, LocalPlayer)
+    else
+        warn("No available servers found")
+    end
+   end,
+})
 -- Other Tab
 local OtherTab = Window:CreateTab("Other", nil)
 OtherTab:CreateButton({
